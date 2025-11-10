@@ -1,0 +1,82 @@
+import requests
+
+API_KEY = 'a859329b4539936d87de52ec'  
+API_URL = "https://v6.exchangerate-api.com/v6"
+
+
+def get_supported_currencies():
+    """Fetch supported currency codes using your API key"""
+    url = f"{API_URL}/{API_KEY}/codes"
+    try:
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        if data["result"] == "success":
+            symbols = {code: {"description": name} for code, name in data["supported_codes"]}
+            return symbols
+        else:
+            print(" API returned an error fetching currency list.")
+    except Exception as e:
+        print(" Could not fetch currency list. Using fallback list.")
+        print(f"Details: {e}")
+
+    
+    return {
+        "USD": {"description": "United States Dollar"},
+        "EUR": {"description": "Euro"},
+        "INR": {"description": "Indian Rupee"},
+        "GBP": {"description": "British Pound"},
+        "JPY": {"description": "Japanese Yen"},
+        "CAD": {"description": "Canadian Dollar"},
+        "AUD": {"description": "Australian Dollar"},
+        "CNY": {"description": "Chinese Yuan"},
+        "AED": {"description": "United Arab Emirates Dirham"},
+        "SGD": {"description": "Singapore Dollar"},
+    }
+
+
+def currency_converter(base_currency, target_currency, amount):
+    """Convert currency using your own API key"""
+    url = f"{API_URL}/{API_KEY}/latest/{base_currency.upper()}"
+
+    try:
+        response = requests.get(url, timeout=5)
+        data = response.json()
+    except requests.exceptions.RequestException:
+        print(" Error fetching exchange rates. Please check your internet connection.")
+        return
+
+    if data["result"] != "success":
+        print(" Error fetching exchange rate. Please check your API key or currency code.")
+        return
+
+    rates = data["conversion_rates"]
+    if target_currency.upper() not in rates:
+        print(" Invalid target currency code.")
+        return
+
+    rate = rates[target_currency.upper()]
+    converted_amount = amount * rate
+
+    print(f"\n💱 {amount:.2f} {base_currency.upper()} = {converted_amount:.2f} {target_currency.upper()}")
+    print(f"Exchange Rate: 1 {base_currency.upper()} = {rate:.4f} {target_currency.upper()}")
+
+if __name__ == "__main__":
+    print("=== 🌍 Currency Converter Using Your Own API Key ===")
+
+    symbols = get_supported_currencies()
+    print("\n Available currencies:")
+    for code, info in symbols.items():
+        print(f"{code} - {info['description']}")
+    print("...")
+
+    base = input("\nEnter base currency (e.g. USD, EUR, INR): ").strip().upper()
+    target = input("Enter target currency (e.g. GBP, AUD, JPY): ").strip().upper()
+
+    if base not in symbols or target not in symbols:
+        print(" Invalid currency code. Please check from the list above.")
+    else:
+        try:
+            amount = float(input("Enter amount to convert: "))
+            currency_converter(base, target, amount)
+        except ValueError:
+            print(" Please enter a valid number for amount.")
